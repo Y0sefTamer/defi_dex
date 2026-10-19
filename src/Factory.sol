@@ -10,4 +10,14 @@ contract Factory {
     Exchange[] public exchangeArray;
 
     event ExchangeCreated(address indexed tokenAddress, address indexed exchangeAddress);
+
+    function createNewExchange(address _tokenAddress) public returns (address) {
+        require(_tokenAddress != address(0), "Invalid token address");
+        require(tokenToExchange[_tokenAddress] == address(0), "exchange already exists");
+        Exchange exchange = new Exchange(_tokenAddress);
+        exchangeArray.push(exchange);
+        tokenToExchange[_tokenAddress] = address(exchange);
+        emit ExchangeCreated(_tokenAddress, address(exchange));
+        return address(exchange);
+    }
 }
