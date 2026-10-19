@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "./ERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /*
     @title Exchange Contract
     @author YosefTamer
@@ -10,6 +11,15 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
     It allows users to add/remove liquidity, swap ETH for tokens, and swap tokens for ETH.
 */
 contract Exchange is ERC20, ReentrancyGuard {
+    ////////////////////////////////////////
+    ////// Custom Errors //////
+    ///////////////////////////////////////
+    error Exchange_InvalidTokenAddress();
+    error Exchange_InvalidEthAmount();
+    error Exchange_InvalidTokenAmount();
+    error Exchange_InsufficientLiquidity();
+    error Exchange_InvalidValues();
+
     ////////////////////////////////////////
     ////// STate Variables & Mappings //////
     ///////////////////////////////////////
@@ -32,7 +42,9 @@ contract Exchange is ERC20, ReentrancyGuard {
         @param _tokenAddress The address of the ERC20 token for which this exchange is created.
         */
     constructor(address _tokenAddress) ERC20("UNI-V1", "UNI-V1") {
-        require(_tokenAddress != address(0), "Token address cannot be 0x0");
+        if (_tokenAddress == address(0)) {
+            revert Exchange_InvalidTokenAddress();
+        }
         tokenAddress = _tokenAddress;
         factoryAddress = msg.sender;
     }
@@ -45,13 +57,17 @@ contract Exchange is ERC20, ReentrancyGuard {
         @return The address of the ERC20 token.
         */
     function addLiquidity(uint256 tokensAdded) external payable nonReentrant returns (uint256) {
-        require(msg.value > 0 && tokensAdded > 0, "Invalid values provided");
+        if (msg.value == 0 || tokensAdded == 0) {
+            revert Exchange_InvalidEthAmount();
+        }
 
         uint256 ethBalance = address(this).balance;
         uint256 tokenBalance = getTokenReserves();
 
         if (tokenBalance == 0) {
-            require(IERC20(tokenAddress).balanceOf(msg.sender) >= tokensAdded, "Insufficient token balance");
+            if (IERC20(tokenAddress).balanceOf(msg.sender) < tokensAdded) {
+                revert Exchange_InvalidTokenAmount();
+            }
             IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokensAdded);
             uint256 liquidity = ethBalance;
             _mint(msg.sender, liquidity);
@@ -59,7 +75,9 @@ contract Exchange is ERC20, ReentrancyGuard {
             return liquidity;
         } else {
             uint256 liquidity = (msg.value * totalSupply()) / (ethBalance - msg.value);
-            require(IERC20(tokenAddress).balanceOf(msg.sender) >= tokensAdded, "Insufficient token balance");
+            if (IERC20(tokenAddress).balanceOf(msg.sender) < tokensAdded) {
+                revert Exchange_InvalidTokenAmount();
+            }
             IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokensAdded);
             _mint(msg.sender, liquidity);
             emit LiquidityAdded(msg.sender, msg.value, tokensAdded);
@@ -74,16 +92,19 @@ contract Exchange is ERC20, ReentrancyGuard {
         */
 
     function removeLiquidity(uint256 tokenAmount) external nonReentrant returns (uint256, uint256) {
-        require(tokenAmount > 0, "Invalid token amount");
+        if (tokenAmount == 0) {
+            revert Exchange_InvalidTokenAmount();
+        }
 
         uint256 ethAmount = (address(this).balance * tokenAmount) / totalSupply();
         uint256 tokenAmt = (getTokenReserves() * tokenAmount) / totalSupply();
 
-        require(
+        if (
             (getTokenReserves() / address(this).balance)
-                == ((getTokenReserves() + tokenAmt) / (address(this).balance + ethAmount)),
-            "Invariant check failed"
-        );
+                != ((getTokenReserves() + tokenAmt) / (address(this).balance + ethAmount))
+        ) {
+            revert Exchange_InsufficientLiquidity();
+        }
         _burn(msg.sender, tokenAmount);
 
         payable(msg.sender).transfer(ethAmount);
@@ -102,7 +123,9 @@ contract Exchange is ERC20, ReentrancyGuard {
             */
     function swapEthForTokens(uint256 minTokens, address recipient) external payable nonReentrant returns (uint256) {
         uint256 tokenAmount = getTokenAmount(msg.value);
-        require(tokenAmount >= minTokens, "Token amount less than expected");
+        if (tokenAmount < minTokens) {
+            revert Exchange_InvalidTokenAmount();
+        }
 
         IERC20(tokenAddress).transfer(recipient, tokenAmount);
         emit TokenPurchased(msg.sender, msg.value, tokenAmount);
@@ -118,7 +141,9 @@ contract Exchange is ERC20, ReentrancyGuard {
             */
     function tokenForEthSwap(uint256 tokensSold, uint256 minEth) external nonReentrant returns (uint256) {
         uint256 ethAmount = getEthAmount(tokensSold);
-        require(ethAmount >= minEth, "ETH amount less than expected");
+        if (ethAmount < minEth) {
+            revert Exchange_InvalidEthAmount();
+        }
 
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokensSold);
         payable(msg.sender).transfer(ethAmount);
@@ -144,7 +169,9 @@ contract Exchange is ERC20, ReentrancyGuard {
         @return The amount of ERC20 tokens that can be purchased.
         */
     function getTokenAmount(uint256 ethSold) public view returns (uint256) {
-        require(ethSold > 0, "ETH sold must be greater than 0");
+        if (ethSold == 0) {
+            revert Exchange_InvalidEthAmount();
+        }
         uint256 outputReserve = getTokenReserves();
         return getAmount(ethSold, address(this).balance - ethSold, outputReserve);
     }
@@ -155,7 +182,9 @@ contract Exchange is ERC20, ReentrancyGuard {
         @return The amount of ETH that can be purchased.
         */
     function getEthAmount(uint256 tokensSold) public view returns (uint256) {
-        require(tokensSold > 0, "Tokens sold must be greater than 0");
+        if (tokensSold == 0) {
+            revert Exchange_InvalidTokenAmount();
+        }
         uint256 inputReserve = getTokenReserves();
         return getAmount(tokensSold, inputReserve - tokensSold, address(this).balance);
     }
@@ -168,7 +197,9 @@ contract Exchange is ERC20, ReentrancyGuard {
         @return The calculated output amount of tokens.
         */
     function getAmount(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) public pure returns (uint256) {
-        require(inputReserve > 0 && inputAmount > 0, "Invalid values provided");
+        if (inputReserve == 0 || inputAmount == 0) {
+            revert Exchange_InvalidValues();
+        }
         uint256 inputAmountWithFee = inputAmount * 997; // Applying a 0.3% fee
         uint256 numerator = inputAmountWithFee * outputReserve;
         uint256 denominator = (inputReserve * 1000) + inputAmountWithFee;
