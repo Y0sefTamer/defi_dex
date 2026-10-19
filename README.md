@@ -7,7 +7,7 @@
 >
 > It has **not been audited**. Do not deploy it to mainnet or use it with real funds.
 
-![Solidity](https://img.shields.io/badge/Solidity-0.8.20-363636?logo=solidity)
+![Solidity](https://img.shields.io/badge/Solidity-0.8.13-363636?logo=solidity)
 ![Foundry](https://img.shields.io/badge/Built%20with-Foundry-000000)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
