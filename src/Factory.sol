@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "./Exchange.sol";
 
 contract Factory {
+    uint256 public tokenCount;
     mapping(address => address) public tokenToExchange;
     mapping(address => address) public exchangeToToken;
     mapping(uint256 => address) public idToToken;
@@ -17,11 +18,14 @@ contract Factory {
         Exchange exchange = new Exchange(_tokenAddress);
         exchangeArray.push(exchange);
         tokenToExchange[_tokenAddress] = address(exchange);
+        exchangeToToken[address(exchange)] = _tokenAddress;
+        tokenCount++;
+        idToToken[tokenCount] = _tokenAddress;
         emit ExchangeCreated(_tokenAddress, address(exchange));
         return address(exchange);
     }
 
-    function getExchange(address _tokenAddress) public view returns(address) {
+    function getExchange(address _tokenAddress) public view returns (address) {
         return tokenToExchange[_tokenAddress];
     }
 
@@ -32,4 +36,5 @@ contract Factory {
     function getTokenWithId(uint256 _tokenId) public view returns (address) {
         return idToToken[_tokenId];
     }
+    
 }
