@@ -3,7 +3,12 @@ pragma solidity ^0.8.13;
 
 import "./ERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-
+/*
+    @title Exchange Contract
+    @author YosefTamer
+    @dev This contract implements a decentralized exchange (DEX) for trading a specific ERC20 token with ETH.
+    It allows users to add/remove liquidity, swap ETH for tokens, and swap tokens for ETH.
+*/
 contract Exchange is ERC20, ReentrancyGuard {
     ////////////////////////////////////////
     ////// STate Variables & Mappings //////
@@ -164,7 +169,7 @@ contract Exchange is ERC20, ReentrancyGuard {
         */
     function getAmount(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) public pure returns (uint256) {
         require(inputReserve > 0 && inputAmount > 0, "Invalid values provided");
-        uint256 inputAmountWithFee = inputAmount * 997;
+        uint256 inputAmountWithFee = inputAmount * 997; // Applying a 0.3% fee
         uint256 numerator = inputAmountWithFee * outputReserve;
         uint256 denominator = (inputReserve * 1000) + inputAmountWithFee;
         return numerator / denominator;
