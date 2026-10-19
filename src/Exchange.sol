@@ -121,4 +121,52 @@ contract Exchange is ERC20, ReentrancyGuard {
 
         return ethAmount;
     }
+
+    ////////////////////////////////////////
+    ////// View Functions //////
+    ///////////////////////////////////////
+    /*
+        @dev Returns the amount of ERC20 tokens held by the exchange contract.
+        @return The amount of ERC20 tokens in the exchange contract.
+        */
+    function getTokenReserves() public view returns (uint256) {
+        return IERC20(tokenAddress).balanceOf(address(this));
+    }
+
+    /*
+        @dev Returns the amount of ERC20 tokens that can be purchased with the given amount of ETH.
+        @param ethSold The amount of ETH to be sold.
+        @return The amount of ERC20 tokens that can be purchased.
+        */
+    function getTokenAmount(uint256 ethSold) public view returns (uint256) {
+        require(ethSold > 0, "ETH sold must be greater than 0");
+        uint256 outputReserve = getTokenReserves();
+        return getAmount(ethSold, address(this).balance - ethSold, outputReserve);
+    }
+
+    /*
+        @dev Returns the amount of ETH that can be purchased with the given amount of ERC20 tokens.
+        @param tokensSold The amount of ERC20 tokens to be sold.
+        @return The amount of ETH that can be purchased.
+        */
+    function getEthAmount(uint256 tokensSold) public view returns (uint256) {
+        require(tokensSold > 0, "Tokens sold must be greater than 0");
+        uint256 inputReserve = getTokenReserves();
+        return getAmount(tokensSold, inputReserve - tokensSold, address(this).balance);
+    }
+
+    /*
+        @dev Calculates the output amount of tokens based on the input amount and reserves.
+        @param inputAmount The amount of input tokens.
+        @param inputReserve The reserve of input tokens in the exchange.
+        @param outputReserve The reserve of output tokens in the exchange.
+        @return The calculated output amount of tokens.
+        */
+    function getAmount(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) public pure returns (uint256) {
+        require(inputReserve > 0 && inputAmount > 0, "Invalid values provided");
+        uint256 inputAmountWithFee = inputAmount * 997;
+        uint256 numerator = inputAmountWithFee * outputReserve;
+        uint256 denominator = (inputReserve * 1000) + inputAmountWithFee;
+        return numerator / denominator;
+    }
 }
