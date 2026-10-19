@@ -69,7 +69,10 @@ contract Exchange is ERC20, ReentrancyGuard {
             if (IERC20(tokenAddress).balanceOf(msg.sender) < tokensAdded) {
                 revert Exchange_InvalidTokenAmount();
             }
-            IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokensAdded);
+            bool success = IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokensAdded);
+            if (!success) {
+                revert Exchange_InvalidTokenAmount();
+            }
             uint256 liquidity = ethBalance;
             _mint(msg.sender, liquidity);
             emit LiquidityAdded(msg.sender, msg.value, tokensAdded);
@@ -79,7 +82,10 @@ contract Exchange is ERC20, ReentrancyGuard {
             if (IERC20(tokenAddress).balanceOf(msg.sender) < tokensAdded) {
                 revert Exchange_InvalidTokenAmount();
             }
-            IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokensAdded);
+            bool success = IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokensAdded);
+            if (!success) {
+                revert Exchange_InvalidTokenAmount();
+            }
             _mint(msg.sender, liquidity);
             emit LiquidityAdded(msg.sender, msg.value, tokensAdded);
             return liquidity;
@@ -108,8 +114,14 @@ contract Exchange is ERC20, ReentrancyGuard {
         }
         _burn(msg.sender, tokenAmount);
 
-        payable(msg.sender).transfer(ethAmount);
-        IERC20(tokenAddress).transfer(msg.sender, tokenAmt);
+        (bool ethTransferSuccess, ) = msg.sender.call{value: ethAmount}("");
+        if (!ethTransferSuccess) {
+            revert Exchange_InvalidEthAmount();
+        }
+        bool tokenTransferSuccess = IERC20(tokenAddress).transfer(msg.sender, tokenAmt);
+        if (!tokenTransferSuccess) {
+            revert Exchange_InvalidTokenAmount();
+        }
 
         emit LiquidityRemoved(msg.sender, ethAmount, tokenAmt);
 
@@ -128,7 +140,10 @@ contract Exchange is ERC20, ReentrancyGuard {
             revert Exchange_InvalidTokenAmount();
         }
 
-        IERC20(tokenAddress).transfer(recipient, tokenAmount);
+       bool success = IERC20(tokenAddress).transfer(recipient, tokenAmount);
+        if (!success) {
+            revert Exchange_InvalidTokenAmount();
+        }
         emit TokenPurchased(msg.sender, msg.value, tokenAmount);
 
         return tokenAmount;
@@ -146,8 +161,14 @@ contract Exchange is ERC20, ReentrancyGuard {
             revert Exchange_InvalidEthAmount();
         }
 
-        IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokensSold);
-        payable(msg.sender).transfer(ethAmount);
+      bool success = IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokensSold);
+        if (!success) {
+            revert Exchange_InvalidTokenAmount();
+        }
+        (bool ethTransferSuccess, ) = msg.sender.call{value: ethAmount}("");
+        if (!ethTransferSuccess) {
+            revert Exchange_InvalidEthAmount();
+        }
         emit TokenSold(msg.sender, tokensSold, ethAmount);
 
         return ethAmount;
