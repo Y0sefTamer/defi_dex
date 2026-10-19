@@ -88,4 +88,37 @@ contract Exchange is ERC20, ReentrancyGuard {
 
         return (ethAmount, tokenAmt);
     }
+
+    /*
+            @dev Swaps ETH for the associated ERC20 tokens.
+            @param minTokens The minimum amount of tokens expected to receive.
+            @param recipient The address that will receive the purchased tokens.
+            @return The amount of tokens purchased.
+            */
+    function swapEthForTokens(uint256 minTokens, address recipient) external payable nonReentrant returns (uint256) {
+        uint256 tokenAmount = getTokenAmount(msg.value);
+        require(tokenAmount >= minTokens, "Token amount less than expected");
+
+        IERC20(tokenAddress).transfer(recipient, tokenAmount);
+        emit TokenPurchased(msg.sender, msg.value, tokenAmount);
+
+        return tokenAmount;
+    }
+
+    /*
+            @dev Swaps the associated ERC20 tokens for ETH.
+            @param tokensSold The amount of tokens to sell.
+            @param minEth The minimum amount of ETH expected to receive.
+            @return The amount of ETH received.
+            */
+    function tokenForEthSwap(uint256 tokensSold, uint256 minEth) external nonReentrant returns (uint256) {
+        uint256 ethAmount = getEthAmount(tokensSold);
+        require(ethAmount >= minEth, "ETH amount less than expected");
+
+        IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokensSold);
+        payable(msg.sender).transfer(ethAmount);
+        emit TokenSold(msg.sender, tokensSold, ethAmount);
+
+        return ethAmount;
+    }
 }
