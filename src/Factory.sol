@@ -4,6 +4,15 @@ pragma solidity ^0.8.13;
 import "./Exchange.sol";
 
 contract Factory {
+    ////////////////////////////////////////
+    ////// Custom Errors //////
+    ///////////////////////////////////////
+    error Factory_ExchangeAlreadyExists();
+    error Factory_InvalidTokenAddress();
+
+    ////////////////////////////////////////
+    ////// STate Variables & Mappings //////
+    ///////////////////////////////////////
     uint256 public tokenCount;
     mapping(address => address) public tokenToExchange;
     mapping(address => address) public exchangeToToken;
@@ -13,8 +22,12 @@ contract Factory {
     event ExchangeCreated(address indexed tokenAddress, address indexed exchangeAddress);
 
     function createNewExchange(address _tokenAddress) public returns (address) {
-        require(_tokenAddress != address(0), "Invalid token address");
-        require(tokenToExchange[_tokenAddress] == address(0), "exchange already exists");
+        if (_tokenAddress == address(0)) {
+            revert Factory_InvalidTokenAddress();
+        }
+        if (tokenToExchange[_tokenAddress] != address(0)) {
+            revert Factory_ExchangeAlreadyExists();
+        }
         Exchange exchange = new Exchange(_tokenAddress);
         exchangeArray.push(exchange);
         tokenToExchange[_tokenAddress] = address(exchange);
@@ -36,5 +49,4 @@ contract Factory {
     function getTokenWithId(uint256 _tokenId) public view returns (address) {
         return idToToken[_tokenId];
     }
-    
 }
