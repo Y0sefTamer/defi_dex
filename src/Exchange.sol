@@ -114,7 +114,7 @@ contract Exchange is ERC20, ReentrancyGuard {
         }
         _burn(msg.sender, tokenAmount);
 
-        (bool ethTransferSuccess, ) = msg.sender.call{value: ethAmount}("");
+        (bool ethTransferSuccess,) = msg.sender.call{value: ethAmount}("");
         if (!ethTransferSuccess) {
             revert Exchange_InvalidEthAmount();
         }
@@ -140,7 +140,7 @@ contract Exchange is ERC20, ReentrancyGuard {
             revert Exchange_InvalidTokenAmount();
         }
 
-       bool success = IERC20(tokenAddress).transfer(recipient, tokenAmount);
+        bool success = IERC20(tokenAddress).transfer(recipient, tokenAmount);
         if (!success) {
             revert Exchange_InvalidTokenAmount();
         }
@@ -161,11 +161,11 @@ contract Exchange is ERC20, ReentrancyGuard {
             revert Exchange_InvalidEthAmount();
         }
 
-      bool success = IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokensSold);
+        bool success = IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokensSold);
         if (!success) {
             revert Exchange_InvalidTokenAmount();
         }
-        (bool ethTransferSuccess, ) = msg.sender.call{value: ethAmount}("");
+        (bool ethTransferSuccess,) = msg.sender.call{value: ethAmount}("");
         if (!ethTransferSuccess) {
             revert Exchange_InvalidEthAmount();
         }

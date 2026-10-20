@@ -7,7 +7,6 @@ import {console} from "forge-std/console.sol";
 
 contract DeployToken is Script {
     function run() external {
-        
         vm.startBroadcast();
 
         MyToken token = new MyToken(msg.sender);

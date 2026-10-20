@@ -7,7 +7,6 @@ import {console} from "forge-std/console.sol";
 
 contract DeployFactory is Script {
     function run() external {
-        
         vm.startBroadcast();
 
         Factory factory = new Factory();
