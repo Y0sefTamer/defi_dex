@@ -23,7 +23,7 @@ NETWORK_ARGS = --rpc-url http://localhost:8545 --private-key $(DEFAULT_ANVIL_KEY
 
 # Override NETWORK_ARGS if ARGS contains --network sepolia
 ifneq (,$(findstring --network sepolia,$(ARGS)))
-    NETWORK_ARGS = --rpc-url $(SEPOLIA_RPC_URL) --private-key $(SEPOLIA_KEY) --broadcast   -vvvv 
+    NETWORK_ARGS = --rpc-url $(SEPOLIA_RPC_URL) --private-key $(SEPOLIA_KEY) --broadcast --gas-estimate-multiplier 800 -vvvv 
 endif
 
 deployf:
